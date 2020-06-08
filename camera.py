@@ -6,6 +6,8 @@ import dlib
 import imutils
 from imutils import face_utils
 
+from flask_socketio import send, emit
+
 class Camera(object):
     def __init__(self):
 
@@ -13,6 +15,7 @@ class Camera(object):
         self.frames = [open(f + '.jpg', 'rb').read() for f in ['1', '2', '3']]
 
         self.detector = dlib.get_frontal_face_detector()
+        self.head_pos = {}
         #import pdb; pdb.set_trace()
         self.predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     def get_frame_jpeg(self):
@@ -36,7 +39,7 @@ class Camera(object):
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         rects = self.detector(rgb_frame, 1)
 
-        
+        self.head_pos = {}
         #print(len(rects))
         for rect in rects:
             cv2.rectangle(frame, (rect.left(),rect.top()), (rect.right(),rect.bottom()), (0, 255, 0), 1)
@@ -52,8 +55,12 @@ class Camera(object):
             for (i, (x, y)) in enumerate(shape):
                 cv2.circle(frame, (x, y), 1, (0, 0, 255), -1)
 			
-            print(x,y,z)
+            self.head_pos = {"x": float(x), "y": float(y), "z": float(z)}
+            print(self.head_pos)
         return frame
+
+    def get_head_pos(self):
+        return self.head_pos
        
 
 if __name__ == "__main__":

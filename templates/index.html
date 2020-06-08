@@ -9,23 +9,49 @@
     </style>
   </head>
   <body>
+
+    <script src="//code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    
+    
+    <!-- <script type="text/javascript"
+         src="{{ url_for('static', filename='jquery-1.12.4.min.js') }}"></script> -->
     <script type="text/javascript"
          src="{{ url_for('static', filename='three.js') }}"></script>
+    <!-- <script type="text/javascript"
+         src="{{ url_for('static', filename='socket.io.js') }}"></script> -->
     
     <h1>Augmented Reality Demonstration</h1>
-    <img src="{{ url_for('video_feed') }}">
+    <img id="feed" src="{{ url_for('video_feed') }}">
     <script>
+
+
+
+    
+      var imgWidth = 400
+      var imgHeight = 225
+
 			var scene = new THREE.Scene();
-			var camera = new THREE.PerspectiveCamera( 75, 400 / 320, 0.1, 1000 );
+			var camera = new THREE.PerspectiveCamera( 
+        75, imgWidth / imgHeight, 0.1, 1000 );
 
 			var renderer = new THREE.WebGLRenderer({ alpha: true } );
-			renderer.setSize( 400, 320 );
+			renderer.setSize( imgWidth, imgHeight );
 			document.body.appendChild( renderer.domElement );
 
 			var geometry = new THREE.BoxGeometry();
-			var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+      //var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+      const material = new THREE.MeshPhongMaterial(
+        {color: 0x00ff00,
+         specular: 0x111111,
+         transparent: true,
+         opacity: 0.9});
 			var cube = new THREE.Mesh( geometry, material );
 			scene.add( cube );
+      const intensity = 1;
+      const light = new THREE.DirectionalLight(0xffffff, intensity);
+      light.position.set(5,5,5);
+      scene.add(light);
 
 			camera.position.z = 5;
 
@@ -35,10 +61,35 @@
 				cube.rotation.x += 0.01;
 				cube.rotation.y += 0.01;
 
-				renderer.render( scene, camera );
-			};
+				
+      };
+      
+      $(document).ready(function() {
+            namespace = '/test';
 
-			animate();
-		</script>
+            // Connect to the Socket.IO server.
+            var socket = io(namespace);
+
+            // Event handler for new connections.
+            // The callback function is invoked when a connection with the
+            // server is established.
+            socket.on('connect', function() {
+                socket.emit('my_event', {data: 'I\'m connected!'});
+            });
+
+            socket.on('my_response', function(msg, cb) {
+               console.log(msg);
+               // todo compute world coordinates based on camera
+               cube.position.x = (msg.x-imgWidth/2)/30;
+               cube.position.y = -(msg.y-imgHeight/2)/30;
+               cube.position.z = -(msg.z-20)/10;
+               renderer.render( scene, camera );
+            });
+
+      });
+
+			//animate();
+    </script>
+    <div id="log"></div>
   </body>
 </html>
